@@ -1,22 +1,18 @@
 package com.shishkin;
 
-import java.util.concurrent.TimeUnit;
+import com.shishkin.controllers.MonteCarloDiceController;
+
+import java.util.Scanner;
 
 public class Main {
 
-    public static void main(String[] args) throws InterruptedException {
-        long startTime;
+    public static void main(String[] args) {
         System.out.println("#running");
 
-        MonteCarloDiceCalculator monteCarloDiceController = new MonteCarloDiceCalculator(1e-7);
+        try (Scanner scanner = new Scanner(System.in)) {
+            MonteCarloDiceController controller = new MonteCarloDiceController(scanner);
+            controller.start();
+        }
 
-        startTime = System.currentTimeMillis();
-
-        Runnable runnable = () -> System.out.println("Probability: " + monteCarloDiceController.calculateProbability());
-        Thread t = new Thread(runnable);
-        t.start();
-
-        t.join(TimeUnit.MINUTES.toMillis(10));
-        System.out.println((System.currentTimeMillis() - startTime) + " ms");
     }
 }

@@ -1,4 +1,4 @@
-package com.shishkin;
+package com.shishkin.models;
 
 import java.util.Random;
 
