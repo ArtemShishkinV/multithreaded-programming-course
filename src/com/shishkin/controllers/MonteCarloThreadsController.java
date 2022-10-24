@@ -4,14 +4,12 @@ import com.shishkin.handlers.MonteCarloDiceThread;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
 public class MonteCarloThreadsController {
     private static final int COUNT_CPU = 4;
     private final int attempts;
+
 
 
     public MonteCarloThreadsController(double eps) {

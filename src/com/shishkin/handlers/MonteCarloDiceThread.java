@@ -6,6 +6,7 @@ import com.shishkin.models.DiceGenerator;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 
 public class MonteCarloDiceThread implements Callable<Integer> {
     private static final int COUNT_DICES = 20;
@@ -15,8 +16,11 @@ public class MonteCarloDiceThread implements Callable<Integer> {
 
     private static volatile MonteCarloDiceThread instance;
 
+    private static final CountDownLatch latch = new CountDownLatch(1);
+
     private final int attempts;
     private final List<Dice> dices;
+
 
     private MonteCarloDiceThread(int attempts) {
         this.attempts = attempts;
@@ -40,7 +44,16 @@ public class MonteCarloDiceThread implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        return flips(attempts);
+        int result;
+        try {
+            latch.await();
+            result = flips(attempts);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        } finally {
+            latch.countDown();
+        }
+        return result;
     }
 
     private int flips(int attempts) {
