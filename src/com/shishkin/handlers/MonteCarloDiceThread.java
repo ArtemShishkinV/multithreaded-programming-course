@@ -6,7 +6,7 @@ import com.shishkin.models.DiceGenerator;
 import java.util.Comparator;
 import java.util.List;
 
-public class MonteCarloDiceThread implements Runnable {
+public final class MonteCarloDiceThread implements Runnable {
     private static final int COUNT_DICES = 20;
     private static final int COUNT_FACES = 10;
     private static final int COUNT_BEST_ATTEMPTS = 10;
