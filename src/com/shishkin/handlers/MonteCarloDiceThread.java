@@ -5,16 +5,15 @@ import com.shishkin.models.DiceGenerator;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.Callable;
 
-public class MonteCarloDiceThread implements Runnable {
+public class MonteCarloDiceThread implements Callable<Integer> {
     private static final int COUNT_DICES = 20;
     private static final int COUNT_FACES = 10;
     private static final int COUNT_BEST_ATTEMPTS = 10;
     private static final int POINT_LIMIT = 90;
-    private static int id = 0;
 
     private static volatile MonteCarloDiceThread instance;
-    private int countFavorableFlip = 0;
 
     private final int attempts;
     private final List<Dice> dices;
@@ -22,7 +21,6 @@ public class MonteCarloDiceThread implements Runnable {
     private MonteCarloDiceThread(int attempts) {
         this.attempts = attempts;
         this.dices = DiceGenerator.generate(COUNT_DICES, COUNT_FACES);
-        id++;
     }
 
     public static MonteCarloDiceThread getInstance(int attempts) {
@@ -40,21 +38,13 @@ public class MonteCarloDiceThread implements Runnable {
         return localInstance;
     }
 
-    public int getThreadId() {
-        return id;
-    }
-
     @Override
-    public void run() {
-//        System.out.println("Thread with id " + getThreadId());
-        flips(attempts);
+    public Integer call() throws Exception {
+        return flips(attempts);
     }
 
-    public int getCountFavorableFlip() {
-        return countFavorableFlip;
-    }
-
-    private void flips(int attempts) {
+    private int flips(int attempts) {
+        int countFavorableFlip = 0;
         for (int i = 0; i < attempts; i++) {
             if (isFavorableFlip()) {
                 synchronized (this) {
@@ -62,6 +52,7 @@ public class MonteCarloDiceThread implements Runnable {
                 }
             }
         }
+        return countFavorableFlip;
     }
 
     private boolean isFavorableFlip() {

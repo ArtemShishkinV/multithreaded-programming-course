@@ -2,44 +2,69 @@ package com.shishkin.controllers;
 
 import com.shishkin.handlers.MonteCarloDiceThread;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
 public class MonteCarloThreadsController {
+    private static final int COUNT_CPU = 4;
     private final int attempts;
+
 
     public MonteCarloThreadsController(double eps) {
         this.attempts = (int) (1 / eps);
     }
 
-    public double calculateProbability() {
-        MonteCarloDiceThread monteCarloDiceThread;
+    public double calculateProbability() throws Exception {
+        int countFavorableFlip;
+        int countThread;
 
         if (attempts <= 1_000_000) {
-            monteCarloDiceThread = MonteCarloDiceThread.getInstance(attempts);
-            monteCarloDiceThread.run();
+            countFavorableFlip = getCountFavorableFlipSequential();
+        } else if (attempts <= 4_000_000) {
+            countThread = 2;
+            countFavorableFlip = getCountFavorableFlipParallel(countThread);
+        } else if (attempts <= 18_000_000) {
+            countThread = 3;
+            countFavorableFlip = getCountFavorableFlipParallel(countThread);
         } else {
-            int attemptsInThread = attempts / 3;
-            System.out.println("Attempts in thread: " + attemptsInThread);
+            countFavorableFlip = getCountFavorableFlipParallel(COUNT_CPU);
+        }
 
-            monteCarloDiceThread = MonteCarloDiceThread.getInstance(attemptsInThread);
+        System.out.println("Good flips: " + countFavorableFlip +
+                " of " + attempts + " attempts");
+        return ((double) countFavorableFlip) / attempts;
+    }
 
-            Thread t1 = new Thread(monteCarloDiceThread);
-            Thread t2 = new Thread(monteCarloDiceThread);
-            Thread t3 = new Thread(monteCarloDiceThread);
+    private int getCountFavorableFlipSequential() throws Exception {
+        MonteCarloDiceThread monteCarloDiceThread = MonteCarloDiceThread.getInstance(attempts);
+        return monteCarloDiceThread.call();
+    }
 
-            t1.start();
-            t2.start();
-            t3.start();
+    private int getCountFavorableFlipParallel(int countThreads) throws ExecutionException, InterruptedException {
+        List<Future<Integer>> results = new ArrayList<>();
+        int attemptsInTask = this.attempts / countThreads;
+        int countFavorableFlip = 0;
 
-            try {
-                t1.join();
-                t2.join();
-                t3.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+        try (ExecutorService executors = Executors.newFixedThreadPool(countThreads)) {
+            System.out.println("Attempts in thread: " + attemptsInTask);
+
+            MonteCarloDiceThread monteCarloDiceThread = MonteCarloDiceThread.getInstance(attemptsInTask);
+
+            for(int i = 0; i < countThreads; i++) {
+                System.out.println(i);
+                results.add(executors.submit(monteCarloDiceThread));
             }
         }
 
-        System.out.println("Good flips: " + monteCarloDiceThread.getCountFavorableFlip() +
-                " of " + attempts + " attempts");
-        return ((double) monteCarloDiceThread.getCountFavorableFlip()) / attempts;
+        for (Future<Integer> result:
+             results) {
+            countFavorableFlip += result.get();
+        }
+
+        return countFavorableFlip;
     }
 }
