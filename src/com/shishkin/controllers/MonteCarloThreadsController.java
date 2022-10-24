@@ -39,7 +39,7 @@ public class MonteCarloThreadsController {
         return ((double) countFavorableFlip) / attempts;
     }
 
-    private int getCountFavorableFlipSequential() throws Exception {
+    private int getCountFavorableFlipSequential() {
         MonteCarloDiceThread monteCarloDiceThread = MonteCarloDiceThread.getInstance(attempts);
         return monteCarloDiceThread.call();
     }
@@ -55,7 +55,6 @@ public class MonteCarloThreadsController {
             MonteCarloDiceThread monteCarloDiceThread = MonteCarloDiceThread.getInstance(attemptsInTask);
 
             for(int i = 0; i < countThreads; i++) {
-                System.out.println(i);
                 results.add(executors.submit(monteCarloDiceThread));
             }
         }

@@ -39,18 +39,23 @@ public class MonteCarloDiceThread implements Callable<Integer> {
     }
 
     @Override
-    public Integer call() throws Exception {
+    public Integer call() {
         return flips(attempts);
     }
 
     private int flips(int attempts) {
         int countFavorableFlip = 0;
+        int countOut = attempts / 10;
+        int attemptsDivide = attempts / 100;
+        Long id = Thread.currentThread().threadId();
+
         for (int i = 0; i < attempts; i++) {
             if (isFavorableFlip()) {
                 synchronized (this) {
                     countFavorableFlip++;
                 }
             }
+            if(i % countOut == 0) System.out.printf("Thread-%d, completed %d %% %n", id, i / attemptsDivide);
         }
         return countFavorableFlip;
     }
