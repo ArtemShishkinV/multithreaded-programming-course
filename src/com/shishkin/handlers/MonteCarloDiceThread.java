@@ -6,20 +6,38 @@ import com.shishkin.models.DiceGenerator;
 import java.util.Comparator;
 import java.util.List;
 
-public class MonteCarloDiceThread extends Thread {
+public class MonteCarloDiceThread implements Runnable {
     private static final int COUNT_DICES = 20;
     private static final int COUNT_FACES = 10;
     private static final int COUNT_BEST_ATTEMPTS = 10;
     private static final int POINT_LIMIT = 90;
+    private static int id = 0;
+
+    private static volatile MonteCarloDiceThread instance;
+    private int countFavorableFlip = 0;
+
     private final int attempts;
     private final List<Dice> dices;
 
-    private final int id;
-
-    public MonteCarloDiceThread(int id, double eps) {
-        this.attempts = (int) (1 / eps);
+    private MonteCarloDiceThread(int attempts) {
+        this.attempts = attempts;
         this.dices = DiceGenerator.generate(COUNT_DICES, COUNT_FACES);
-        this.id = id;
+        id++;
+    }
+
+    public static MonteCarloDiceThread getInstance(int attempts) {
+        MonteCarloDiceThread localInstance = instance;
+
+        if (localInstance == null) {
+            synchronized (MonteCarloDiceThread.class) {
+                localInstance = instance;
+                if (localInstance == null) {
+                    instance = localInstance = new MonteCarloDiceThread(attempts);
+                }
+            }
+        }
+
+        return localInstance;
     }
 
     public int getThreadId() {
@@ -28,19 +46,22 @@ public class MonteCarloDiceThread extends Thread {
 
     @Override
     public void run() {
-        int countFavorableFlip = 0;
+//        System.out.println("Thread with id " + getThreadId());
+        flips(attempts);
+    }
 
+    public int getCountFavorableFlip() {
+        return countFavorableFlip;
+    }
+
+    private void flips(int attempts) {
         for (int i = 0; i < attempts; i++) {
             if (isFavorableFlip()) {
-                countFavorableFlip++;
-            }
-
-            if (Thread.currentThread().isInterrupted()) {
-                System.out.println("Interrupted: " + Thread.currentThread().getName());
-                return;
+                synchronized (this) {
+                    countFavorableFlip++;
+                }
             }
         }
-        System.out.println(((double) countFavorableFlip) / attempts);
     }
 
     private boolean isFavorableFlip() {
