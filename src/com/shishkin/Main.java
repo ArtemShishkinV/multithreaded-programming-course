@@ -9,12 +9,10 @@ public class Main {
 
         long start = System.currentTimeMillis();
 
-        MonteCarloThreadsController controller = new MonteCarloThreadsController(0.000000065);
-        double result = controller.calculateProbability();
+        MonteCarloThreadsController.start();
 
         long finish = System.currentTimeMillis();
 
-        System.out.println("Probability: " + result);
         System.out.println("Time: " + (finish - start) + " ms.");
 
     }
