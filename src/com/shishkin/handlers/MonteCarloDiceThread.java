@@ -6,7 +6,7 @@ import com.shishkin.models.DiceGenerator;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Semaphore;
 
 public class MonteCarloDiceThread implements Callable<Integer> {
     private static final int COUNT_DICES = 20;
@@ -16,7 +16,7 @@ public class MonteCarloDiceThread implements Callable<Integer> {
 
     private static volatile MonteCarloDiceThread instance;
 
-    private static final CountDownLatch latch = new CountDownLatch(1);
+    private static final Semaphore SEMAPHORE = new Semaphore(2, true);
 
     private final int attempts;
     private final List<Dice> dices;
@@ -46,13 +46,12 @@ public class MonteCarloDiceThread implements Callable<Integer> {
     public Integer call() {
         int result;
         try {
-            latch.await();
-            result = flips(attempts);
+            SEMAPHORE.acquire();
         } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        } finally {
-            latch.countDown();
+            Thread.currentThread().interrupt();
         }
+        result = flips(attempts);
+        SEMAPHORE.release();
         return result;
     }
 
@@ -64,11 +63,9 @@ public class MonteCarloDiceThread implements Callable<Integer> {
 
         for (int i = 0; i < attempts; i++) {
             if (isFavorableFlip()) {
-                synchronized (this) {
-                    countFavorableFlip++;
-                }
+                countFavorableFlip++;
             }
-            if(i % countOut == 0) System.out.printf("Thread-%d, completed %d %% %n", id, i / attemptsDivide);
+            if (i % countOut == 0) System.out.printf("Thread-%d, completed %d %% %n", id, i / attemptsDivide);
         }
         return countFavorableFlip;
     }
