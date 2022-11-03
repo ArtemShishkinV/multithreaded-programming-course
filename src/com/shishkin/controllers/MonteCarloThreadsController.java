@@ -11,7 +11,6 @@ public class MonteCarloThreadsController {
     private final int attempts;
 
 
-
     public MonteCarloThreadsController(double eps) {
         this.attempts = (int) (1 / eps);
     }
@@ -38,30 +37,33 @@ public class MonteCarloThreadsController {
     }
 
     private int getCountFavorableFlipSequential() {
-        MonteCarloDiceThread monteCarloDiceThread = MonteCarloDiceThread.getInstance(attempts);
+        MonteCarloDiceThread monteCarloDiceThread = MonteCarloDiceThread.getInstance(attempts, 1);
         return monteCarloDiceThread.call();
     }
 
     private int getCountFavorableFlipParallel(int countThreads) throws ExecutionException, InterruptedException {
         List<Future<Integer>> results = new ArrayList<>();
         int attemptsInTask = this.attempts / countThreads;
-        int countFavorableFlip = 0;
 
         try (ExecutorService executors = Executors.newFixedThreadPool(countThreads)) {
             System.out.println("Attempts in thread: " + attemptsInTask);
 
-            MonteCarloDiceThread monteCarloDiceThread = MonteCarloDiceThread.getInstance(attemptsInTask);
+            MonteCarloDiceThread monteCarloDiceThread = MonteCarloDiceThread.getInstance(attemptsInTask, countThreads);
 
-            for(int i = 0; i < countThreads; i++) {
+            for (int i = 0; i < countThreads; i++) {
                 results.add(executors.submit(monteCarloDiceThread));
             }
         }
 
-        for (Future<Integer> result:
-             results) {
+        return finishedTasks(results);
+    }
+
+    private int finishedTasks(List<Future<Integer>> results) throws ExecutionException, InterruptedException {
+        int countFavorableFlip = 0;
+        for (Future<Integer> result :
+                results) {
             countFavorableFlip += result.get();
         }
-
         return countFavorableFlip;
     }
 }

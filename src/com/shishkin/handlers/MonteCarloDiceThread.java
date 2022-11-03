@@ -6,7 +6,7 @@ import com.shishkin.models.DiceGenerator;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Semaphore;
+import java.util.concurrent.CountDownLatch;
 
 public class MonteCarloDiceThread implements Callable<Integer> {
     private static final int COUNT_DICES = 20;
@@ -16,25 +16,26 @@ public class MonteCarloDiceThread implements Callable<Integer> {
 
     private static volatile MonteCarloDiceThread instance;
 
-    private static final Semaphore SEMAPHORE = new Semaphore(2, true);
-
     private final int attempts;
     private final List<Dice> dices;
 
+    private final CountDownLatch latch;
 
-    private MonteCarloDiceThread(int attempts) {
+
+    private MonteCarloDiceThread(int attempts, int countThreads) {
         this.attempts = attempts;
         this.dices = DiceGenerator.generate(COUNT_DICES, COUNT_FACES);
+        this.latch = new CountDownLatch(countThreads);
     }
 
-    public static MonteCarloDiceThread getInstance(int attempts) {
+    public static MonteCarloDiceThread getInstance(int attempts, int countThreads) {
         MonteCarloDiceThread localInstance = instance;
 
         if (localInstance == null) {
             synchronized (MonteCarloDiceThread.class) {
                 localInstance = instance;
                 if (localInstance == null) {
-                    instance = localInstance = new MonteCarloDiceThread(attempts);
+                    instance = localInstance = new MonteCarloDiceThread(attempts, countThreads);
                 }
             }
         }
@@ -44,14 +45,16 @@ public class MonteCarloDiceThread implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        int result;
+        int result = flips(attempts);
+        latch.countDown();
+        long start = System.currentTimeMillis();
         try {
-            SEMAPHORE.acquire();
+            latch.await();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        result = flips(attempts);
-        SEMAPHORE.release();
+        long finish = System.currentTimeMillis();
+        System.out.printf("Time: (Thread - %d) %d ms.%n", Thread.currentThread().threadId(), (finish - start));
         return result;
     }
 
