@@ -6,7 +6,10 @@ import com.shishkin.models.DiceGenerator;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MonteCarloDiceThread implements Callable<Integer> {
     private static final int COUNT_DICES = 20;
@@ -14,18 +17,21 @@ public class MonteCarloDiceThread implements Callable<Integer> {
     private static final int COUNT_BEST_ATTEMPTS = 10;
     private static final int POINT_LIMIT = 90;
 
+    private final Lock lock = new ReentrantLock();
+    private final Condition condition = lock.newCondition();
+    private final AtomicInteger progressedThreads;
+    private final int countThreads;
     private static volatile MonteCarloDiceThread instance;
 
     private final int attempts;
     private final List<Dice> dices;
 
-    private final CountDownLatch latch;
-
 
     private MonteCarloDiceThread(int attempts, int countThreads) {
         this.attempts = attempts;
         this.dices = DiceGenerator.generate(COUNT_DICES, COUNT_FACES);
-        this.latch = new CountDownLatch(countThreads);
+        this.progressedThreads = new AtomicInteger(countThreads);
+        this.countThreads = countThreads;
     }
 
     public static MonteCarloDiceThread getInstance(int attempts, int countThreads) {
@@ -45,31 +51,29 @@ public class MonteCarloDiceThread implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        int result = flips(attempts);
-        latch.countDown();
-        long start = System.currentTimeMillis();
-        try {
-            latch.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
-        long finish = System.currentTimeMillis();
-        System.out.printf("Time: (Thread - %d) %d ms.%n", Thread.currentThread().threadId(), (finish - start));
-        return result;
+        return flips(attempts);
     }
 
     private int flips(int attempts) {
         int countFavorableFlip = 0;
         int countOut = attempts / 10;
-        int attemptsDivide = attempts / 100;
-        Long id = Thread.currentThread().threadId();
 
         for (int i = 0; i < attempts; i++) {
             if (isFavorableFlip()) {
                 countFavorableFlip++;
             }
-            if (i % countOut == 0) System.out.printf("Thread-%d, completed %d %% %n", id, i / attemptsDivide);
+            if (i % countOut == 0 && i != 0) {
+                this.progressedThreads.decrementAndGet();
+                lock.lock();
+                try {
+                    System.out.printf("Thread-%d signal! %n", Thread.currentThread().threadId());
+                    condition.signalAll();
+                } finally {
+                    lock.unlock();
+                }
+            }
         }
+
         return countFavorableFlip;
     }
 
@@ -93,5 +97,21 @@ public class MonteCarloDiceThread implements Callable<Integer> {
         int result = flipResult;
         if (flipResult == 10) result = flipResult + flip(dice);
         return result;
+    }
+
+    public AtomicInteger getProgressedThreads() {
+        return progressedThreads;
+    }
+
+    public int getCountThreads() {
+        return countThreads;
+    }
+
+    public Lock getLock() {
+        return lock;
+    }
+
+    public Condition getCondition() {
+        return condition;
     }
 }

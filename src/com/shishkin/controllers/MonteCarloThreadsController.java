@@ -1,6 +1,7 @@
 package com.shishkin.controllers;
 
 import com.shishkin.handlers.MonteCarloDiceThread;
+import com.shishkin.handlers.ProgressPrinter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +50,7 @@ public class MonteCarloThreadsController {
             System.out.println("Attempts in thread: " + attemptsInTask);
 
             MonteCarloDiceThread monteCarloDiceThread = MonteCarloDiceThread.getInstance(attemptsInTask, countThreads);
+            new Thread(ProgressPrinter.getInstance(monteCarloDiceThread)).start();
 
             for (int i = 0; i < countThreads; i++) {
                 results.add(executors.submit(monteCarloDiceThread));
