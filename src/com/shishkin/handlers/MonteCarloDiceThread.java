@@ -1,5 +1,6 @@
 package com.shishkin.handlers;
 
+import com.shishkin.models.CountDownLatchImpl;
 import com.shishkin.models.Dice;
 import com.shishkin.models.DiceGenerator;
 
@@ -19,13 +20,13 @@ public class MonteCarloDiceThread implements Callable<Integer> {
     private final int attempts;
     private final List<Dice> dices;
 
-    private final CountDownLatch latch;
+    private final CountDownLatchImpl latch;
 
 
     private MonteCarloDiceThread(int attempts, int countThreads) {
         this.attempts = attempts;
         this.dices = DiceGenerator.generate(COUNT_DICES, COUNT_FACES);
-        this.latch = new CountDownLatch(countThreads);
+        this.latch = new CountDownLatchImpl(countThreads);
     }
 
     public static MonteCarloDiceThread getInstance(int attempts, int countThreads) {
