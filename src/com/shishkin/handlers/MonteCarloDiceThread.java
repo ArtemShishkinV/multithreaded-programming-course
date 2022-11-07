@@ -44,14 +44,15 @@ public class MonteCarloDiceThread implements Callable<Integer> {
 
     @Override
     public Integer call() {
-        int result;
+        int result = 0;
         try {
             SEMAPHORE.acquire();
+            result = flips(attempts);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        } finally {
+            SEMAPHORE.release();
         }
-        result = flips(attempts);
-        SEMAPHORE.release();
         return result;
     }
 
