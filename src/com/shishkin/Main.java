@@ -9,7 +9,7 @@ public class Main {
         double result = 0.0;
         long start = System.currentTimeMillis();
 
-        MonteCarloThreadsController controller = new MonteCarloThreadsController(0.0000001);
+        MonteCarloThreadsController controller = new MonteCarloThreadsController(0.00000008);
 
         try {
             result = controller.calculateProbability();

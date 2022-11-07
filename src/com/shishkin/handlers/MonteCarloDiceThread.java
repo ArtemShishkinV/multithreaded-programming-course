@@ -7,7 +7,7 @@ import com.shishkin.models.DiceGenerator;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 public class MonteCarloDiceThread implements Callable<Integer> {
     private static final int COUNT_DICES = 20;
@@ -50,7 +50,7 @@ public class MonteCarloDiceThread implements Callable<Integer> {
         latch.countDown();
         long start = System.currentTimeMillis();
         try {
-            latch.await();
+            System.out.println(latch.tryAwait(10, TimeUnit.MILLISECONDS));
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
